@@ -1,5 +1,6 @@
 //! Remote file storage.
 
+mod gcs;
 mod local;
 mod s3;
 
@@ -8,6 +9,7 @@ use tokio::io::AsyncRead;
 
 use crate::error::ServerResult;
 
+pub(crate) use self::gcs::{GcsBackend, GcsRemoteFile, GcsStorageConfig};
 pub(crate) use self::local::{LocalBackend, LocalRemoteFile, LocalStorageConfig};
 pub(crate) use self::s3::{S3Backend, S3RemoteFile, S3StorageConfig};
 
@@ -21,6 +23,9 @@ pub(crate) use self::s3::{S3Backend, S3RemoteFile, S3StorageConfig};
 pub enum RemoteFile {
     /// File in an S3-compatible storage bucket.
     S3(S3RemoteFile),
+
+    /// File in a Google Cloud Storage bucket.
+    Gcs(GcsRemoteFile),
 
     /// File in local storage.
     Local(LocalRemoteFile),
@@ -83,6 +88,10 @@ impl RemoteFile {
     pub fn remote_file_id(&self) -> String {
         match self {
             Self::S3(f) => format!("s3:{}/{}/{}", f.region, f.bucket, f.key),
+            Self::Gcs(f) => {
+                let project_id = f.project_id.as_deref().unwrap_or("_");
+                format!("gcs:{}/{}/{}", project_id, f.bucket, f.object)
+            }
             Self::Http(f) => format!("http:{}", f.url),
             Self::Local(f) => format!("local:{}", f.name),
         }
