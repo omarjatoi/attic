@@ -53,7 +53,7 @@ url = "%database_url%"
 [storage]
 # Storage type
 #
-# Can be "local" or "s3".
+# Can be "local", "s3", or "gcs".
 type = "local"
 
 # ## Local storage
@@ -81,6 +81,21 @@ path = "%storage_path%"
 #[storage.credentials]
 #  access_key_id = ""
 #  secret_access_key = ""
+
+# ## GCS Storage (set type to "gcs" and uncomment below)
+#
+# Uses Application Default Credentials (ADC) for authentication by default.
+# Set the GOOGLE_APPLICATION_CREDENTIALS environment variable to the
+# path of your service account key file, or use workload identity.
+#
+#bucket = "some-bucket"
+#
+# Path to a service account credentials JSON file.
+# If not set, Application Default Credentials (ADC) are used.
+#credentials-file = "/path/to/service-account-key.json"
+#
+# Custom GCS endpoint (useful for emulators or private endpoints).
+#endpoint = "https://storage.googleapis.com"
 
 # Data chunking
 #
