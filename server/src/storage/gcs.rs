@@ -98,20 +98,29 @@ impl GcsBackend {
     pub async fn new(config: GcsStorageConfig) -> ServerResult<Self> {
         let cred = match config.credentials_file.as_ref() {
             Some(path) => {
-                let json_str = std::fs::read_to_string(path)
-                    .map_err(|e| ErrorKind::StorageError(anyhow::anyhow!("Failed to read GCS credentials file {path}: {e}")))?;
-                let json: serde_json::Value = serde_json::from_str(&json_str)
-                    .map_err(|e| ErrorKind::StorageError(anyhow::anyhow!("Invalid GCS credentials JSON in {path}: {e}")))?;
+                let json_str = std::fs::read_to_string(path).map_err(|e| {
+                    ErrorKind::StorageError(anyhow::anyhow!(
+                        "Failed to read GCS credentials file {path}: {e}"
+                    ))
+                })?;
+                let json: serde_json::Value = serde_json::from_str(&json_str).map_err(|e| {
+                    ErrorKind::StorageError(anyhow::anyhow!(
+                        "Invalid GCS credentials JSON in {path}: {e}"
+                    ))
+                })?;
                 let cred = google_cloud_auth::credentials::service_account::Builder::new(json)
                     .build()
-                    .map_err(|e| ErrorKind::StorageError(anyhow::anyhow!("Failed to build GCS credentials: {e}")))?;
+                    .map_err(|e| {
+                        ErrorKind::StorageError(anyhow::anyhow!(
+                            "Failed to build GCS credentials: {e}"
+                        ))
+                    })?;
                 Some(cred)
             }
             None => None,
         };
 
-        let mut storage_builder = Storage::builder()
-            .with_resumable_upload_buffer_size(CHUNK_SIZE);
+        let mut storage_builder = Storage::builder().with_resumable_upload_buffer_size(CHUNK_SIZE);
         let mut control_builder = StorageControl::builder();
 
         if let Some(ref cred) = cred {
@@ -135,11 +144,16 @@ impl GcsBackend {
             .map_err(ServerError::storage_error)?;
 
         let signer = if let Some(ref path) = config.credentials_file {
-            let json_str = std::fs::read_to_string(path)
-                .map_err(|e| ErrorKind::StorageError(anyhow::anyhow!("Failed to read credentials for signer: {e}")))?;
-            let json: serde_json::Value = serde_json::from_str(&json_str)
-                .map_err(|e| ErrorKind::StorageError(anyhow::anyhow!("Invalid credentials JSON for signer: {e}")))?;
-            match google_cloud_auth::credentials::service_account::Builder::new(json).build_signer() {
+            let json_str = std::fs::read_to_string(path).map_err(|e| {
+                ErrorKind::StorageError(anyhow::anyhow!(
+                    "Failed to read credentials for signer: {e}"
+                ))
+            })?;
+            let json: serde_json::Value = serde_json::from_str(&json_str).map_err(|e| {
+                ErrorKind::StorageError(anyhow::anyhow!("Invalid credentials JSON for signer: {e}"))
+            })?;
+            match google_cloud_auth::credentials::service_account::Builder::new(json).build_signer()
+            {
                 Ok(s) => Some(s),
                 Err(e) => {
                     tracing::warn!("GCS signed URLs unavailable (falling back to streaming): {e}");
